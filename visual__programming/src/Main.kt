@@ -83,7 +83,7 @@ fun main(){
     println("Starting simulation for $simulationTime seconds...")
 
 
-    for(i in 0..9) {
+    for(i in 0 ..simulationTime) {
         println("\nmove ${i + 1}:")
         humans.forEach { it.move() }
     }

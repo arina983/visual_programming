@@ -1,17 +1,17 @@
 import kotlin.random.Random
 
-class Human{
-    var name: String = ""
+open class Human {
+    public var name: String = ""
         get() = field
         set(value) {
             field = value
         }
-    var surname: String = ""
+   public var surname: String = ""
         get() = field
         set(value) {
             field = value
         }
-    var second_name: String = ""
+   public var second_name: String = ""
         get() = field
         set(value) {
             field = value
@@ -30,7 +30,7 @@ class Human{
         set(value) {
             field = value
         }
-    var current_speed: Int = 7
+    public var current_speed: Int = 7
         get() {
             return field
         }
@@ -41,7 +41,7 @@ class Human{
                 println("ошибка, скорость $value невозможна для человека")
             }
         }
-    var age: Int = 0
+   public var age: Int = 0
         get() {
             return field
         }
@@ -53,7 +53,7 @@ class Human{
             }
         }
 
-    constructor(_name: String, _surname: String, _second: String, _cs: Int, _age: Int){
+   public constructor(_name: String, _surname: String, _second: String, _cs: Int, _age: Int){
         name = _name
         surname= _surname
         second_name = _second
@@ -62,21 +62,44 @@ class Human{
         println("We created the human object with name and age: $surname $name $second_name, age: $age")
     }
 
-    fun move(){
-        val dx = Random.nextInt(-current_speed, current_speed + 1)
-        val dy = Random.nextInt(-current_speed, current_speed + 1)
+   open fun move(): Thread{
+       val thread = Thread {
+           val dx = Random.nextInt(-current_speed, current_speed + 1)
+           val dy = Random.nextInt(-current_speed, current_speed + 1)
 
-        x += dx
-        y += dy
+           x += dx
+           y += dy
 
-        println("$name (speed: $current_speed) moved by: ($dx, $dy) to: ($x, $y)")
+           println("$name (speed: $current_speed) moved by: ($dx, $dy) to: ($x, $y)")
+       }
+       thread.start()
+       return thread
+   }
+}
+
+class Driver: Human {
+    constructor(_name: String, _surname: String, _second: String, _cs: Int, _age: Int) :
+    super(_name, _surname, _second, _cs, _age)
+
+    override fun move(): Thread{
+        val thread = Thread {
+            val dx = Random.nextInt(-current_speed, current_speed + 1)
+            x += dx
+            println("$name (Driver, speed: $current_speed) moved linearly by: ($dx) to: ($x)")
+        }
+        thread.start()
+        return thread
     }
 }
+
 fun main(){
 
     val humans = arrayOf(
         Human("Arina", "Bubenina", "Ivanovna", 7, _age = 18),
         Human("Valeria", "Popova", "Pavlovna", 4, _age = 18)
+    )
+    val driver = arrayOf(
+        Driver(_name = "Sonya", _surname = "Pac", _second = "Sergeevna", _cs = 10, _age = 21)
     )
 
     val simulationTime = 5
@@ -85,12 +108,18 @@ fun main(){
 
     for(i in 0 ..simulationTime) {
         println("\nmove ${i + 1}:")
-        humans.forEach { it.move() }
+
+        val threads = mutableListOf<Thread>()
+        humans.forEach { threads.add(it.move()) }
+        driver.forEach { threads.add(it.move()) }
+        threads.forEach { it.join() }
+
     }
 
     println("\n final position ")
     humans.forEach {
         println("${it.name}: (${it.x}, ${it.y})")
     }
+    driver.forEach { println("${it.name}(Driver): (${it.x})") }
 }
 

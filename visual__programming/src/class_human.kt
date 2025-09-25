@@ -2,38 +2,11 @@ import kotlin.random.Random
 
 open class Human : Moviable {
     public var name: String = ""
-        get() = field
-        set(value) {
-            field = value
-        }
-   public var surname: String = ""
-        get() = field
-        set(value) {
-            field = value
-        }
-   public var second_name: String = ""
-        get() = field
-        set(value) {
-            field = value
-        }
-   override var x: Int = 0
-        get() {
-            return field
-        }
-        set(value) {
-            field = value
-        }
-   override var y: Int = 0
-        get() {
-            return field
-        }
-        set(value) {
-            field = value
-        }
+    public var surname: String = ""
+    public var second_name: String = ""
+    override var x: Int = 0
+    override var y: Int = 0
     override var current_speed: Int = 7
-        get() {
-            return field
-        }
         set(value) {
             if (value in 0..16){
                 field = value
@@ -41,10 +14,10 @@ open class Human : Moviable {
                 println("ошибка, скорость $value невозможна для человека")
             }
         }
-   public var age: Int = 0
         get() {
             return field
         }
+   public var age: Int = 0
         set(value) {
             if (value in 0..100) {
                 field = value
@@ -52,6 +25,9 @@ open class Human : Moviable {
                 println("введенный возраст $value некорректен")
             }
         }
+       get() {
+           return field
+       }
 
    public constructor(_name: String, _surname: String, _second: String, _cs: Int, _age: Int){
         name = _name

@@ -1,6 +1,13 @@
 import kotlin.random.Random
 
-open class Human {
+interface Moviable{
+    var x: Int
+    var y: Int
+    var current_speed : Int
+    fun move(): Thread
+}
+
+open class Human : Moviable {
     public var name: String = ""
         get() = field
         set(value) {
@@ -16,21 +23,21 @@ open class Human {
         set(value) {
             field = value
         }
-    var x: Int = 0
+   override var x: Int = 0
         get() {
             return field
         }
         set(value) {
             field = value
         }
-    var y: Int = 0
+   override var y: Int = 0
         get() {
             return field
         }
         set(value) {
             field = value
         }
-    public var current_speed: Int = 7
+    override var current_speed: Int = 7
         get() {
             return field
         }
@@ -62,7 +69,7 @@ open class Human {
         println("We created the human object with name and age: $surname $name $second_name, age: $age")
     }
 
-   open fun move(): Thread{
+    override open fun move(): Thread{
        val thread = Thread {
            val dx = Random.nextInt(-current_speed, current_speed + 1)
            val dy = Random.nextInt(-current_speed, current_speed + 1)

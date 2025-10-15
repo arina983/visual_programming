@@ -12,7 +12,6 @@ class MainActivity : AppCompatActivity() {
     private var currentNumber = ""
     private var firstNumber = 0.0
     private var currentOperator = ""
-
     private var nextOperator =  false
     private lateinit var resultText: TextView
 
@@ -140,7 +139,7 @@ class MainActivity : AppCompatActivity() {
         val buttonPoint = findViewById<Button>(R.id.buttonPoint)
         buttonPoint.setOnClickListener {
             if (nextOperator) {
-                currentOperator = "."
+                currentNumber = "0."
             } else {
                 currentNumber += "."
                 resultText.text = currentNumber

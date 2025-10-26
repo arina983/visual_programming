@@ -22,12 +22,14 @@ class MainActivity : AppCompatActivity() {
         val calculateButton = findViewById<Button>(R.id.calculateButton)
         calculateButton.setOnClickListener {
             calculateButton.setTextColor(Color.rgb(255,0,255))
-            val Calculator = Intent(this, CalculatorActivity::class.java)
-            startActivity(Calculator)
+            val calculator = Intent(this, CalculatorActivity::class.java)
+            startActivity(calculator)
         }
         val mediaPlayerButton = findViewById<Button>(R.id.mediaPlayerButton)
         mediaPlayerButton.setOnClickListener {
-            mediaPlayerButton.setTextColor(Color.rgb(255,0,0))
+            mediaPlayerButton.setTextColor(Color.rgb(255,0,255))
+            val mediaPlayer = Intent(this, MediaActivity::class.java)
+            startActivity(mediaPlayer)
         }
         val locationButton = findViewById<Button>(R.id.locationButton)
         locationButton.setOnClickListener {

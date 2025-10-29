@@ -10,6 +10,13 @@ import android.widget.Button
 import android.graphics.Color
 
 class MainActivity : AppCompatActivity() {
+
+    private fun setupButton(buttonId: Int, color: Int) {
+        val button = findViewById<Button>(buttonId)
+        button.setOnClickListener {
+            button.setTextColor(color)
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -21,31 +28,19 @@ class MainActivity : AppCompatActivity() {
         }
         val calculateButton = findViewById<Button>(R.id.calculateButton)
         calculateButton.setOnClickListener {
-            calculateButton.setTextColor(Color.rgb(255,0,255))
+            calculateButton.setTextColor(Color.rgb(255, 0, 255))
             val calculator = Intent(this, CalculatorActivity::class.java)
             startActivity(calculator)
         }
         val mediaPlayerButton = findViewById<Button>(R.id.mediaPlayerButton)
         mediaPlayerButton.setOnClickListener {
-            mediaPlayerButton.setTextColor(Color.rgb(255,0,255))
+            mediaPlayerButton.setTextColor(Color.rgb(255, 0 , 255))
             val mediaPlayer = Intent(this, MediaActivity::class.java)
             startActivity(mediaPlayer)
         }
-        val locationButton = findViewById<Button>(R.id.locationButton)
-        locationButton.setOnClickListener {
-            locationButton.setTextColor(Color.rgb(255,0,0))
-        }
-        val mobileButton = findViewById<Button>(R.id.mobileButton)
-        mobileButton.setOnClickListener {
-            mobileButton.setTextColor(Color.rgb(255,0,0))
-        }
-        val Button5 = findViewById<Button>(R.id.button5)
-        Button5.setOnClickListener {
-            Button5.setTextColor(Color.rgb(255,0,0))
-        }
-        val Button6 = findViewById<Button>(R.id.button6)
-        Button6.setOnClickListener {
-            Button6.setTextColor(Color.rgb(255,0,0))
-        }
+            setupButton(R.id.locationButton, Color.RED)
+            setupButton(R.id.mobileButton, Color.RED)
+            setupButton(R.id.button5, Color.RED)
+            setupButton(R.id.button6, Color.RED)
     }
 }

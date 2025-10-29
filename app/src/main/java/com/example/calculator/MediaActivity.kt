@@ -22,7 +22,22 @@ class MediaActivity : AppCompatActivity() {
     private lateinit var seekBarPosition: SeekBar
     private lateinit var textViewVolume: TextView
     private var isPlaying = false
-    private val logTag = "MediaActivity"
+
+    private fun playMusic() {
+        val musicPath: String = Environment.getExternalStorageDirectory().path + "/Music"
+        val directory = File(musicPath)
+        val musicFile = directory.listFiles()
+            ?.filter { file -> file.extension == "mp3" || file.extension == "wav" || file.extension == "aac" }
+        if (musicFile.isNullOrEmpty()) {
+            println("no files in directory")
+        } else {
+            val firstMusicFile = musicFile[0]
+            mediaPlayer.setDataSource(firstMusicFile.absolutePath)
+            mediaPlayer.prepare()
+            mediaPlayer.start()
+            isPlaying = true
+        }
+    }
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
             playMusic()
@@ -75,27 +90,11 @@ class MediaActivity : AppCompatActivity() {
         }
         val buttonForward = findViewById<Button>(R.id.buttonForward)
         buttonForward.setOnClickListener {
-
+            // логика для кнопки вперед
         }
         val buttonRewind = findViewById<Button>(R.id.buttonRewind)
         buttonRewind.setOnClickListener {
-
-        }
-    }
-    private fun playMusic() {
-        val musicPath: String = Environment.getExternalStorageDirectory().path + "/Music"
-        Log.d(logTag, "PATH: " + musicPath)
-        val directory = File(musicPath)
-        val musicFile = directory.listFiles()
-            ?.filter { file -> file.extension == "mp3" || file.extension == "wav" || file.extension == "aac" }
-        if (musicFile.isNullOrEmpty()) {
-            println("no files in directory")
-        } else {
-            val firstMusicFile = musicFile[0]
-            mediaPlayer.setDataSource(firstMusicFile.absolutePath)
-            mediaPlayer.prepare()
-            mediaPlayer.start()
-            isPlaying = true
+            // логика для кнопки назад
         }
     }
 }

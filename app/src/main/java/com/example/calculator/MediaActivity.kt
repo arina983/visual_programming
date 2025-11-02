@@ -18,6 +18,10 @@ import java.io.File
 import android.media.AudioManager
 import android.content.Context
 import android.os.Handler
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.ListView
+
 class MediaActivity : AppCompatActivity() {
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var seekBarVolume: SeekBar
@@ -26,16 +30,33 @@ class MediaActivity : AppCompatActivity() {
     private lateinit var audioManager: AudioManager
     private lateinit var handler: Handler
     private lateinit var updateSeekBar: Runnable
-    private fun playMusic() {
-        val musicPath: String = Environment.getExternalStorageDirectory().path + "/Music"
-        val directory = File(musicPath)
-        val musicFile = directory.listFiles()
-            ?.filter { file -> file.extension == "mp3" || file.extension == "wav" || file.extension == "aac" }
-        if (musicFile.isNullOrEmpty()) {
+    private lateinit var musicList: ListView
+    private var musicFile: List<File> = emptyList()
+
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            playMusic()
+            //Toast.makeText(this, "Permission Granted", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, "Please grant permission", Toast.LENGTH_LONG).show()
+        }
+    }
+    private fun playMusic(position: Int = 0) {
+        try{
+            if (::mediaPlayer.isInitialized){
+                if (mediaPlayer.isPlaying){
+                    mediaPlayer.stop()
+                }
+            }
+            mediaPlayer.reset()
+        } catch (e: Exception){
+
+        }
+        if (musicFile.isEmpty()) {
             println("no files in directory")
         } else {
             val textViewTitle = findViewById<TextView>(R.id.textViewTitle)
-            val firstMusicFile = musicFile[0]
+            val firstMusicFile = musicFile[position]
             val fileName = firstMusicFile.name
             textViewTitle.text = fileName
             mediaPlayer.setDataSource(firstMusicFile.absolutePath)
@@ -45,13 +66,23 @@ class MediaActivity : AppCompatActivity() {
             handler.postDelayed(updateSeekBar,0)
         }
     }
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            playMusic()
-            //Toast.makeText(this, "Permission Granted", Toast.LENGTH_LONG).show()
-        } else {
-            Toast.makeText(this, "Please grant permission", Toast.LENGTH_LONG).show()
+    private fun musicList() {
+        val musicPath: String = Environment.getExternalStorageDirectory().path + "/Music"
+        val directory = File(musicPath)
+        musicFile = directory.listFiles()
+            ?.filter { file -> file.extension == "mp3" || file.extension == "wav" || file.extension == "aac" } ?: emptyList()
+        if (musicFile.isEmpty()) {
+            println("no files in directory")
+            return
         }
+        val musicArray = mutableListOf<String>()
+        for (i in musicFile){
+            musicArray.add(i.name)
+        }
+        val adapter = ArrayAdapter(
+            this, android.R.layout.simple_list_item_1, musicArray)
+        musicList.adapter = adapter
+
     }
     override fun onStart(){
         super.onStart()
@@ -163,6 +194,13 @@ class MediaActivity : AppCompatActivity() {
             } catch (e: IllegalStateException) {
             }
         }
+        musicList = findViewById(R.id.musicListView)
+        musicList.setOnItemClickListener(AdapterView.OnItemClickListener { parent, view, position, id ->
+            playMusic(position)
+            buttonPlay.text = "❚❚"
+        })
+        musicList()
+
         val buttonForward = findViewById<Button>(R.id.buttonForward)
         buttonForward.setOnClickListener {
             // логика для кнопки вперед

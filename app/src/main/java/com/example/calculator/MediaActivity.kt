@@ -91,6 +91,9 @@ class MediaActivity : AppCompatActivity() {
         musicList.adapter = adapter
 
     }
+//    override fun onStart(){
+//        super.onStart()
+//    }
     override fun onPause() {
         super.onPause()
         if (mediaPlayer.isPlaying){
@@ -142,6 +145,7 @@ class MediaActivity : AppCompatActivity() {
             }
         })
 
+        textViewVolume = findViewById(R.id.seekBarValue)
         textViewVolumeAll = findViewById(R.id.textViewVolumeAll)
         seekBarVolume = findViewById(R.id.seekBarVolume)
 

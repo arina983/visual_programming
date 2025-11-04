@@ -24,6 +24,7 @@ import android.widget.ListView
 
 class MediaActivity : AppCompatActivity() {
     private lateinit var mediaPlayer: MediaPlayer
+    private var log_tag : String = "MediaPlayer"
     private lateinit var seekBarVolume: SeekBar
     private lateinit var seekBarPosition: SeekBar
     private lateinit var textViewVolume: TextView
@@ -32,6 +33,8 @@ class MediaActivity : AppCompatActivity() {
     private lateinit var updateSeekBar: Runnable
     private lateinit var musicList: ListView
     private var musicFile: List<File> = emptyList()
+    private lateinit var textViewVolumeAll: TextView
+    private var currentMusicFile = 0
 
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
@@ -50,10 +53,10 @@ class MediaActivity : AppCompatActivity() {
             }
             mediaPlayer.reset()
         } catch (e: Exception){
-
+            Log.e(log_tag, "error in PlayMusic", e)
         }
         if (musicFile.isEmpty()) {
-            println("no files in directory")
+            Log.w(log_tag, "No music files in directory")
         } else {
             val textViewTitle = findViewById<TextView>(R.id.textViewTitle)
             val firstMusicFile = musicFile[position]
@@ -62,6 +65,10 @@ class MediaActivity : AppCompatActivity() {
             mediaPlayer.setDataSource(firstMusicFile.absolutePath)
             mediaPlayer.prepare()
             seekBarPosition.max = mediaPlayer.duration
+            val musicLen = mediaPlayer.duration
+            val minutesAll = musicLen /  60000
+            val secondsAll = (musicLen / 1000) % 60
+            textViewVolumeAll.text = "$minutesAll:${ if (secondsAll < 10) "0$secondsAll" else "$secondsAll"}"
             mediaPlayer.start()
             handler.postDelayed(updateSeekBar,0)
         }
@@ -72,7 +79,7 @@ class MediaActivity : AppCompatActivity() {
         musicFile = directory.listFiles()
             ?.filter { file -> file.extension == "mp3" || file.extension == "wav" || file.extension == "aac" } ?: emptyList()
         if (musicFile.isEmpty()) {
-            println("no files in directory")
+            Log.w(log_tag, "no files in directory")
             return
         }
         val musicArray = mutableListOf<String>()
@@ -84,18 +91,18 @@ class MediaActivity : AppCompatActivity() {
         musicList.adapter = adapter
 
     }
-    override fun onStart(){
-        super.onStart()
-    }
     override fun onPause() {
         super.onPause()
         if (mediaPlayer.isPlaying){
+            Log.d(log_tag, "pausing MediaPlayer")
             mediaPlayer.pause()
         }
     }
     override fun onDestroy() {
         super.onDestroy()
         if (::mediaPlayer.isInitialized){
+            Log.d(log_tag, "Releasing MediaPlayer")
+            handler.removeCallbacks(updateSeekBar)
             mediaPlayer.release()
         }
     }
@@ -119,7 +126,7 @@ class MediaActivity : AppCompatActivity() {
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val textViewTime = findViewById<TextView>(R.id.textViewTime)
-        seekBarPosition = findViewById<SeekBar>(R.id.seekBarPosition)
+        seekBarPosition = findViewById(R.id.seekBarPosition)
         seekBarPosition.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val minutes = progress / 60000
@@ -135,8 +142,8 @@ class MediaActivity : AppCompatActivity() {
             }
         })
 
-        textViewVolume = findViewById(R.id.seekBarValue)
-        seekBarVolume = findViewById<SeekBar>(R.id.seekBarVolume)
+        textViewVolumeAll = findViewById(R.id.textViewVolumeAll)
+        seekBarVolume = findViewById(R.id.seekBarVolume)
 
         val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
@@ -203,11 +210,19 @@ class MediaActivity : AppCompatActivity() {
 
         val buttonForward = findViewById<Button>(R.id.buttonForward)
         buttonForward.setOnClickListener {
-            // логика для кнопки вперед
+            currentMusicFile = currentMusicFile + 1
+            if (currentMusicFile >= musicFile.size){
+                currentMusicFile = 0
+            }
+            playMusic(currentMusicFile)
         }
         val buttonRewind = findViewById<Button>(R.id.buttonRewind)
         buttonRewind.setOnClickListener {
-            // логика для кнопки назад
+            currentMusicFile = currentMusicFile - 1
+            if (currentMusicFile < 0){
+                currentMusicFile = musicFile.size - 1
+            }
+            playMusic(currentMusicFile)
         }
     }
 }

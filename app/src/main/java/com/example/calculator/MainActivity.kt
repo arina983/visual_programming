@@ -38,7 +38,12 @@ class MainActivity : AppCompatActivity() {
             val mediaPlayer = Intent(this, MediaActivity::class.java)
             startActivity(mediaPlayer)
         }
-            setupButton(R.id.locationButton, Color.RED)
+        val locationButton = findViewById<Button>(R.id.locationButton)
+        locationButton.setOnClickListener {
+            locationButton.setTextColor(Color.rgb(255,0,255))
+            val location = Intent(this, LocationActivity::class.java)
+            startActivity(location)
+        }
             setupButton(R.id.mobileButton, Color.RED)
             setupButton(R.id.button5, Color.RED)
             setupButton(R.id.button6, Color.RED)

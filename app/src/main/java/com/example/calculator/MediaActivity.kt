@@ -91,9 +91,6 @@ class MediaActivity : AppCompatActivity() {
         musicList.adapter = adapter
 
     }
-//    override fun onStart(){
-//        super.onStart()
-//    }
     override fun onPause() {
         super.onPause()
         if (mediaPlayer.isPlaying){

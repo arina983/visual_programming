@@ -121,8 +121,8 @@ class LocationActivity : AppCompatActivity(), android.location.LocationListener 
             requestPermissionStorage()
             return
         }
-        val downloadsDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-        val file = File(downloadsDir,"data.json")
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        val file = File(downloadsDir,"DATAAA.json")
         file.appendText("$jsonString\n")
 
         Log.d("FILE_PATH", "Файл сохранен здесь: ${file.absolutePath}")

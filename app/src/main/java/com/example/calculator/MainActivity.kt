@@ -44,8 +44,13 @@ class MainActivity : AppCompatActivity() {
             val location = Intent(this, LocationActivity::class.java)
             startActivity(location)
         }
-            setupButton(R.id.mobileButton, Color.RED)
-            setupButton(R.id.button5, Color.RED)
-            setupButton(R.id.button6, Color.RED)
+        val socketsButton = findViewById<Button>(R.id.socketsButton)
+        socketsButton.setOnClickListener {
+            socketsButton.setTextColor(Color.rgb(255,0,255))
+            val sockets = Intent(this, SocketsActivity::class.java)
+            startActivity(sockets)
+        }
+        setupButton(R.id.mobileButton, Color.RED)
+        setupButton(R.id.button6, Color.RED)
     }
 }

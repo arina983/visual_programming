@@ -21,11 +21,11 @@
         app:layout_constraintVertical_bias="0.561" />
 
     <Button
-        android:id="@+id/button5"
+        android:id="@+id/mobileButton"
         android:layout_width="95dp"
         android:layout_height="70dp"
         android:backgroundTint="#D1C4E9"
-        android:text="Button"
+        android:text="Mobile communications"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -33,11 +33,11 @@
         app:layout_constraintVertical_bias="0.561" />
 
     <Button
-        android:id="@+id/mobileButton"
+        android:id="@+id/socketsButton"
         android:layout_width="115dp"
         android:layout_height="70dp"
         android:backgroundTint="#D1C4E9"
-        android:text="Mobile communications"
+        android:text="Sockets"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.054"

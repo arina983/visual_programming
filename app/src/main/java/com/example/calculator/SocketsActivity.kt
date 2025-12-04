@@ -22,62 +22,66 @@ class SocketsActivity : AppCompatActivity() {
 
     private lateinit var handler: Handler
     private var userChoice: Boolean = false
-    private lateinit var serverThread: Thread
+    //private lateinit var serverThread: Thread
     private lateinit var clientThread: Thread
 
-    fun startServer() {
-        val context = ZMQ.context(1)
-        val socket = ZContext().createSocket(SocketType.REP)
-        socket.bind("tcp://*:2222")
-        var counter: Int = 0
-
-        while(true) {
-            if (Thread.currentThread().isInterrupted) {
-                break
-            }
-            try {
-                counter++
-                val requestBytes = socket.recv(0)
-                val request = String(requestBytes, ZMQ.CHARSET)
-                println("[SERVER] Received request: [$request]")
-
-                handler.postDelayed({
-                    tvSockets.text = "Received MSG from Client = $counter" }, 0)
-                try {
-                    Thread.sleep(1000)
-                } catch (e: InterruptedException) {
-                    break
-                }
-                val response = "Hello from Android ZMQ Server!"
-                socket.send(response.toByteArray(ZMQ.CHARSET), 0)
-                println("[SERVER] Sent reply: [$response]")
-            } catch (e: org.zeromq.ZMQException){
-                break
-            }
-        }
-        try {
-            socket.close();
-            context.close();
-        } catch (e: Exception){
-
-        }
-    }
+//    fun startServer() {
+//        val context = ZMQ.context(1)
+//        val socket = ZContext().createSocket(SocketType.REP)
+//        socket.bind("tcp://*:2222")
+//        var counter: Int = 0
+//
+//        while(true) {
+//            if (Thread.currentThread().isInterrupted) {
+//                break
+//            }
+//            try {
+//                counter++
+//                val requestBytes = socket.recv(0)
+//                val request = String(requestBytes, ZMQ.CHARSET)
+//                println("[SERVER] Received request: [$request]")
+//
+//                handler.postDelayed({
+//                    tvSockets.text = "Received MSG from Client = $counter" }, 0)
+//                try {
+//                    Thread.sleep(1000)
+//                } catch (e: InterruptedException) {
+//                    break
+//                }
+//                val response = "Hello from Android ZMQ Server!"
+//                socket.send(response.toByteArray(ZMQ.CHARSET), 0)
+//                println("[SERVER] Sent reply: [$response]")
+//            } catch (e: org.zeromq.ZMQException){
+//                break
+//            }
+//        }
+//        try {
+//            socket.close();
+//            context.close();
+//        } catch (e: Exception){
+//
+//        }
+//    }
 
     fun startClient() {
         val context = ZMQ.context(1)
         val socket = ZContext().createSocket(SocketType.REQ)
-        socket.connect("tcp://localhost:2222")
-        val request = "Hello from Android client!"
-        for(i in 0..10){
-            if (Thread.currentThread().isInterrupted) {
-                break
-            }
+        socket.connect("tcp://172.20.10.18:5555")
+        val request = "Hello from Android!"
+        var counter: Int = 0
+        while (!Thread.currentThread().isInterrupted) {
             try {
                 socket.send(request.toByteArray(ZMQ.CHARSET), 0)
+                counter++
+                handler.post{
+                    tvSockets.text = "Отправлено: $counter сообщений"
+                }
                 Log.d(log_tag, "[CLIENT] SendT: $request")
 
                 val reply = socket.recv(0)
                 Log.d(log_tag, "[CLIENT] Received: " + String(reply, ZMQ.CHARSET))
+                Thread.sleep(2000)
+
             } catch(e: org.zeromq.ZMQException){
                 break
             } catch (e: InterruptedException){
@@ -92,8 +96,8 @@ class SocketsActivity : AppCompatActivity() {
         }
     }
     fun startCommunication(){
-        serverThread = Thread {startServer()}
-        serverThread.start()
+        //serverThread = Thread {startServer()}
+        //serverThread.start()
 
         clientThread = Thread{
             try {
@@ -107,7 +111,7 @@ class SocketsActivity : AppCompatActivity() {
     }
 
     fun stopCommunication(){
-        serverThread.interrupt()
+        //serverThread.interrupt()
         clientThread.interrupt()
     }
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -136,7 +140,7 @@ class SocketsActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        serverThread.interrupt()
+       // serverThread.interrupt()
         clientThread.interrupt()
     }
 }

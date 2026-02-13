@@ -1,5 +1,9 @@
 package com.example.calculator
 
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -13,6 +17,19 @@ import androidx.core.view.WindowInsetsCompat
 import org.zeromq.SocketType
 import org.zeromq.ZContext
 import org.zeromq.ZMQ
+import com.google.gson.Gson
+import android.location.Location
+import android.location.LocationManager
+import android.provider.Settings
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
+
+data class forJsonString (
+    val longitude: Double,
+    val latitude: Double,
+    val altitude: Double,
+    val time: String
+)
 
 class SocketsActivity : AppCompatActivity() {
     private var log_tag : String = "Sockets"
@@ -22,115 +39,157 @@ class SocketsActivity : AppCompatActivity() {
 
     private lateinit var handler: Handler
     private var userChoice: Boolean = false
-    //private lateinit var serverThread: Thread
     private lateinit var clientThread: Thread
+    private lateinit var myLocationManager: LocationManager
+    private var currentLocation: Location? = null
+    private val gson = Gson()
 
-//    fun startServer() {
-//        val context = ZMQ.context(1)
-//        val socket = ZContext().createSocket(SocketType.REP)
-//        socket.bind("tcp://*:2222")
-//        var counter: Int = 0
-//
-//        while(true) {
-//            if (Thread.currentThread().isInterrupted) {
-//                break
-//            }
-//            try {
-//                counter++
-//                val requestBytes = socket.recv(0)
-//                val request = String(requestBytes, ZMQ.CHARSET)
-//                println("[SERVER] Received request: [$request]")
-//
-//                handler.postDelayed({
-//                    tvSockets.text = "Received MSG from Client = $counter" }, 0)
-//                try {
-//                    Thread.sleep(1000)
-//                } catch (e: InterruptedException) {
-//                    break
-//                }
-//                val response = "Hello from Android ZMQ Server!"
-//                socket.send(response.toByteArray(ZMQ.CHARSET), 0)
-//                println("[SERVER] Sent reply: [$response]")
-//            } catch (e: org.zeromq.ZMQException){
-//                break
-//            }
-//        }
-//        try {
-//            socket.close();
-//            context.close();
-//        } catch (e: Exception){
-//
-//        }
-//    }
+    companion object {
+        private const val PERMISSION_REQUEST_ACCESS_LOCATION = 100
+    }
+
+    private fun requestPermissions() {
+        ActivityCompat.requestPermissions(this, arrayOf(
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ),
+            PERMISSION_REQUEST_ACCESS_LOCATION
+        )
+    }
+
+    private fun isLocationEnabled(): Boolean{
+        val locationManager: LocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+    private fun checkPermissions(): Boolean{
+        return ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    }
 
     fun startClient() {
-        val context = ZMQ.context(1)
-        val socket = ZContext().createSocket(SocketType.REQ)
-        socket.connect("tcp://172.20.10.18:5555")
-        val request = "Hello from Android!"
+        if(checkPermissions()) {
+            if (isLocationEnabled()) {
+                currentLocation = myLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                    ?: myLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                if (currentLocation == null) {
+                    Toast.makeText(applicationContext, "Location not available. Try again.", Toast.LENGTH_SHORT).show()
+                    return
+                }
+            } else {
+                Toast.makeText(applicationContext, "Enable location in settings", Toast.LENGTH_SHORT).show()
+                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                startActivity(intent)
+                return
+            }
+        } else {
+            Log.w(log_tag, "location permission is not allowed")
+            requestPermissions()
+            return
+        }
+
+        var zmqContext = ZContext(1)
+        var socket = zmqContext.createSocket(SocketType.REQ)
+        socket.connect("tcp://10.0.2.2:5552")
         var counter: Int = 0
+
         while (!Thread.currentThread().isInterrupted) {
             try {
-                socket.send(request.toByteArray(ZMQ.CHARSET), 0)
-                counter++
-                handler.post{
-                    tvSockets.text = "Отправлено: $counter сообщений"
+                currentLocation = myLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                    ?: myLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+
+                if (currentLocation != null) {
+                    val objectJson = forJsonString(currentLocation!!.longitude, currentLocation!!.latitude, currentLocation!!.altitude, currentLocation!!.time.toString()
+                    )
+                    val jsonToString = gson.toJson(objectJson)
+
+                    socket.send(jsonToString.toByteArray(ZMQ.CHARSET), 0)
+                    counter++
+
+                    handler.post {
+                        tvSockets.text = "Отправлено: $counter сообщений"
+                    }
+
+                    Log.d(log_tag, "[CLIENT] Send: $jsonToString")
+
+                    val reply = socket.recv(0)
+                    Log.d(log_tag, "[CLIENT] Received: " + String(reply, ZMQ.CHARSET))
+
+                    Thread.sleep(2000)
+                } else {
+                    Log.w(log_tag, "Location is null, skipping...")
+                    Thread.sleep(2000)
                 }
-                Log.d(log_tag, "[CLIENT] SendT: $request")
 
-                val reply = socket.recv(0)
-                Log.d(log_tag, "[CLIENT] Received: " + String(reply, ZMQ.CHARSET))
-                Thread.sleep(2000)
-
-            } catch(e: org.zeromq.ZMQException){
+            } catch(e: org.zeromq.ZMQException) {
+                Log.e(log_tag, "ZMQ Error: ${e.message}")
+                try{
+                    socket.close()
+                    zmqContext.close()
+                } catch (_: Exception){}
+                Thread.sleep(1000)
+                zmqContext = ZContext(1)
+                socket = zmqContext.createSocket(SocketType.REQ)
+                socket.connect("tcp://192.168.0.103:5551")
+                continue
+            } catch (e: InterruptedException) {
+                Log.d(log_tag, "Thread interrupted")
                 break
-            } catch (e: InterruptedException){
+            } catch (e: Exception) {
+                Log.e(log_tag, "General error: ${e.message}")
                 break
             }
         }
+
         try {
             socket.close()
-            context.close()
-        } catch (e: Exception){
-
+            zmqContext.close()
+            Log.d(log_tag, "ZMQ resources closed")
+        } catch (e: Exception) {
+            Log.e(log_tag, "Error closing resources: ${e.message}")
         }
     }
-    fun startCommunication(){
-        //serverThread = Thread {startServer()}
-        //serverThread.start()
 
-        clientThread = Thread{
+    fun startCommunication() {
+        clientThread = Thread {
             try {
                 Thread.sleep(1000)
                 startClient()
-            } catch (e: InterruptedException){
-
+            } catch (e: InterruptedException) {
+                Log.d(log_tag, "Start communication interrupted")
             }
         }
         clientThread.start()
     }
 
-    fun stopCommunication(){
-        //serverThread.interrupt()
-        clientThread.interrupt()
+    fun stopCommunication() {
+        if (::clientThread.isInitialized) {
+            clientThread.interrupt()
+        }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_sockets)
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
         tvSockets = findViewById(R.id.tvSockets)
         handler = Handler(Looper.getMainLooper())
+        myLocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
         buttonStart = findViewById(R.id.buttonStartData)
         buttonStart.setOnClickListener {
             userChoice = true
             startCommunication()
         }
+
         buttonStop = findViewById(R.id.buttonStopData)
         buttonStop.setOnClickListener {
             userChoice = false
@@ -140,7 +199,20 @@ class SocketsActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-       // serverThread.interrupt()
-        clientThread.interrupt()
+        stopCommunication()
+    }
+
+    override fun onRequestPermissionsResult( requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQUEST_ACCESS_LOCATION) {
+            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                Toast.makeText(this, "Location permission granted", Toast.LENGTH_SHORT).show()
+                if (userChoice) {
+                    startCommunication()
+                }
+            } else {
+                Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

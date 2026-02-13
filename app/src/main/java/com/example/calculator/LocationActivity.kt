@@ -128,25 +128,23 @@ class LocationActivity : AppCompatActivity(), android.location.LocationListener 
         Log.d("FILE_PATH", "Файл сохранен здесь: ${file.absolutePath}")
         Toast.makeText(this, "Данные сохранены сюда: ${file.absolutePath}", Toast.LENGTH_LONG).show()
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_location)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-        currentPosition = findViewById<Button>(R.id.currentPositionButton)
-        tvLon = findViewById<TextView>(R.id.textViewLongitude)
-        tvLat = findViewById<TextView>(R.id.textViewLatitude)
-        myFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
-        myLocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        tvAlt = findViewById<TextView>(R.id.Altitude)
-        currentTime = findViewById<TextView>(R.id.textTime)
-        updatePosition = findViewById<Button>(R.id.buttonUpdate)
-
+            super.onCreate(savedInstanceState)
+            enableEdgeToEdge()
+            setContentView(R.layout.activity_location)
+            ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+                val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+                insets
+            }
+            currentPosition = findViewById<Button>(R.id.currentPositionButton)
+            tvLon = findViewById<TextView>(R.id.textViewLongitude)
+            tvLat = findViewById<TextView>(R.id.textViewLatitude)
+            myFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+            myLocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            tvAlt = findViewById<TextView>(R.id.Altitude)
+            currentTime = findViewById<TextView>(R.id.textTime)
+            updatePosition = findViewById<Button>(R.id.buttonUpdate)
     }
     override fun onResume() {
         super.onResume()

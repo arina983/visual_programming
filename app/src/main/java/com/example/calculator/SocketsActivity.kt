@@ -74,12 +74,24 @@ class SocketsActivity : AppCompatActivity() {
                 currentLocation = myLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                     ?: myLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
                 if (currentLocation == null) {
-                    Toast.makeText(applicationContext, "Location not available. Try again.", Toast.LENGTH_SHORT).show()
-                    return
+                    handler.post {
+                        Toast.makeText(
+                            applicationContext,
+                            "Location not available. Try again.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                        return
                 }
             } else {
-                Toast.makeText(applicationContext, "Enable location in settings", Toast.LENGTH_SHORT).show()
-                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                handler.post {
+                    Toast.makeText(
+                        applicationContext,
+                        "Enable location in settings",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                    val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
                 startActivity(intent)
                 return
             }
@@ -91,7 +103,7 @@ class SocketsActivity : AppCompatActivity() {
 
         var zmqContext = ZContext(1)
         var socket = zmqContext.createSocket(SocketType.REQ)
-        socket.connect("tcp://10.0.2.2:5552")
+        socket.connect("tcp://172.20.10.2:5555")
         var counter: Int = 0
 
         while (!Thread.currentThread().isInterrupted) {
@@ -100,18 +112,18 @@ class SocketsActivity : AppCompatActivity() {
                     ?: myLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
 
                 if (currentLocation != null) {
-                    val objectJson = forJsonString(currentLocation!!.longitude, currentLocation!!.latitude, currentLocation!!.altitude, currentLocation!!.time.toString()
-                    )
-                    val jsonToString = gson.toJson(objectJson)
-
-                    socket.send(jsonToString.toByteArray(ZMQ.CHARSET), 0)
+//                    val objectJson = forJsonString(currentLocation!!.longitude, currentLocation!!.latitude, currentLocation!!.altitude, currentLocation!!.time.toString()
+//                    )
+//                    val jsonToString = gson.toJson(objectJson)
+                    val dataString = String.format("%.6f,%.6f,%.2f,%d", currentLocation!!.longitude, currentLocation!!.latitude, currentLocation!!.altitude, currentLocation!!.time)
+                    socket.send(dataString.toByteArray(ZMQ.CHARSET), 0)
                     counter++
 
                     handler.post {
                         tvSockets.text = "Отправлено: $counter сообщений"
                     }
 
-                    Log.d(log_tag, "[CLIENT] Send: $jsonToString")
+                    Log.d(log_tag, "[CLIENT] Send: $dataString")
 
                     val reply = socket.recv(0)
                     Log.d(log_tag, "[CLIENT] Received: " + String(reply, ZMQ.CHARSET))
@@ -131,7 +143,7 @@ class SocketsActivity : AppCompatActivity() {
                 Thread.sleep(1000)
                 zmqContext = ZContext(1)
                 socket = zmqContext.createSocket(SocketType.REQ)
-                socket.connect("tcp://192.168.0.103:5551")
+                socket.connect("tcp://172.20.10.2:5555")
                 continue
             } catch (e: InterruptedException) {
                 Log.d(log_tag, "Thread interrupted")

@@ -50,7 +50,6 @@ class MainActivity : AppCompatActivity() {
             val sockets = Intent(this, SocketsActivity::class.java)
             startActivity(sockets)
         }
-        setupButton(R.id.mobileButton, Color.RED)
         setupButton(R.id.button6, Color.RED)
     }
 }

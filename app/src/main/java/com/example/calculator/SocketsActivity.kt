@@ -21,8 +21,12 @@ import com.google.gson.Gson
 import android.location.Location
 import android.location.LocationManager
 import android.provider.Settings
+import android.telephony.TelephonyManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import kotlin.collections.forEachIndexed
+import android.location.LocationListener
 
 data class forJsonString (
     val longitude: Double,
@@ -41,11 +45,13 @@ class SocketsActivity : AppCompatActivity() {
     private var userChoice: Boolean = false
     private lateinit var clientThread: Thread
     private lateinit var myLocationManager: LocationManager
+    private lateinit var locationListener: LocationListener
     private var currentLocation: Location? = null
     private val gson = Gson()
-
+    private lateinit var telephonyManager: TelephonyManager
     companion object {
         private const val PERMISSION_REQUEST_ACCESS_LOCATION = 100
+        private const val PERMISSION_REQUEST_CELL_INFO = 1
     }
 
     private fun requestPermissions() {
@@ -68,54 +74,59 @@ class SocketsActivity : AppCompatActivity() {
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
     }
 
-    fun startClient() {
-        if(checkPermissions()) {
-            if (isLocationEnabled()) {
-                currentLocation = myLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                    ?: myLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                if (currentLocation == null) {
-                    handler.post {
-                        Toast.makeText(
-                            applicationContext,
-                            "Location not available. Try again.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                        return
+    private fun checkPermissionsAndGetCellInfo() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.d(log_tag, "Нет разрешений READ_PHONE_STATE или ACCESS_COARSE_LOCATION для получения cell info")
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    android.Manifest.permission.READ_PHONE_STATE,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                ),
+                PERMISSION_REQUEST_CELL_INFO
+            )
+        } else {
+            getCellInfo()
+        }
+    }
+
+    private fun getCellInfo(): String {
+        return try {
+            val cellInfoList = telephonyManager.allCellInfo
+            if (cellInfoList != null && cellInfoList.isNotEmpty()) {
+                val activeCell = cellInfoList.find { it.isRegistered }
+                if (activeCell != null) {
+                    activeCell.toString()
+                } else {
+                    cellInfoList[0].toString()
                 }
             } else {
-                handler.post {
-                    Toast.makeText(
-                        applicationContext,
-                        "Enable location in settings",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                    val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                startActivity(intent)
-                return
+                "No cell info available"
             }
-        } else {
-            Log.w(log_tag, "location permission is not allowed")
-            requestPermissions()
-            return
+        } catch (e: SecurityException) {
+            "SecurityException: ${e.message}"
+        } catch (e: Exception) {
+            "Error: ${e.message}"
         }
+    }
+    fun startClient() {
 
         var zmqContext = ZContext(1)
         var socket = zmqContext.createSocket(SocketType.REQ)
-        socket.connect("tcp://172.20.10.2:5555")
+        socket.connect("tcp://172.20.10.2:5556")
         var counter: Int = 0
 
         while (!Thread.currentThread().isInterrupted) {
             try {
-                currentLocation = myLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                    ?: myLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-
                 if (currentLocation != null) {
 //                    val objectJson = forJsonString(currentLocation!!.longitude, currentLocation!!.latitude, currentLocation!!.altitude, currentLocation!!.time.toString()
 //                    )
 //                    val jsonToString = gson.toJson(objectJson)
-                    val dataString = String.format("%.6f,%.6f,%.2f,%d", currentLocation!!.longitude, currentLocation!!.latitude, currentLocation!!.altitude, currentLocation!!.time)
+                    val cellInfo = getCellInfo()
+                    val dataString = String.format("%.6f,%.6f,%.2f,%d | %s", currentLocation!!.longitude, currentLocation!!.latitude, currentLocation!!.altitude, currentLocation!!.time, cellInfo)
                     socket.send(dataString.toByteArray(ZMQ.CHARSET), 0)
                     counter++
 
@@ -143,7 +154,7 @@ class SocketsActivity : AppCompatActivity() {
                 Thread.sleep(1000)
                 zmqContext = ZContext(1)
                 socket = zmqContext.createSocket(SocketType.REQ)
-                socket.connect("tcp://172.20.10.2:5555")
+                socket.connect("tcp://172.20.10.2:5556")
                 continue
             } catch (e: InterruptedException) {
                 Log.d(log_tag, "Thread interrupted")
@@ -164,6 +175,11 @@ class SocketsActivity : AppCompatActivity() {
     }
 
     fun startCommunication() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            checkPermissionsAndGetCellInfo()
+            return
+        }
+        startLocationUpdates()
         clientThread = Thread {
             try {
                 Thread.sleep(1000)
@@ -176,6 +192,7 @@ class SocketsActivity : AppCompatActivity() {
     }
 
     fun stopCommunication() {
+        stopLocationUpdates()
         if (::clientThread.isInitialized) {
             clientThread.interrupt()
         }
@@ -195,6 +212,12 @@ class SocketsActivity : AppCompatActivity() {
         tvSockets = findViewById(R.id.tvSockets)
         handler = Handler(Looper.getMainLooper())
         myLocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+        locationListener = LocationListener { location ->
+            currentLocation = location
+            Log.d(log_tag, "Получено новое местоположение: $location")
+        }
 
         buttonStart = findViewById(R.id.buttonStartData)
         buttonStart.setOnClickListener {
@@ -209,6 +232,45 @@ class SocketsActivity : AppCompatActivity() {
         }
     }
 
+    private fun startLocationUpdates() {
+        if (!checkPermissions()) {
+            requestPermissions()
+            return
+        }
+
+        if (!isLocationEnabled()) {
+            handler.post {
+                Toast.makeText(applicationContext, "Включите геолокацию", Toast.LENGTH_SHORT).show()
+            }
+            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            return
+        }
+
+        try {
+            myLocationManager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                2000,
+                0f,
+                locationListener,
+                Looper.getMainLooper()
+            )
+
+            myLocationManager.requestLocationUpdates(
+                LocationManager.NETWORK_PROVIDER,
+                2000,
+                0f,
+                locationListener,
+                Looper.getMainLooper()
+            )
+        } catch (e: SecurityException) {
+            Log.e(log_tag, "Security exception: ${e.message}")
+        }
+    }
+
+    private fun stopLocationUpdates() {
+        myLocationManager.removeUpdates(locationListener)
+    }
+
     override fun onPause() {
         super.onPause()
         stopCommunication()
@@ -216,6 +278,19 @@ class SocketsActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult( requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            if (requestCode == PERMISSION_REQUEST_CELL_INFO) {
+                if (grantResults.isNotEmpty() &&
+                    grantResults.size == 2 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED &&
+                    grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                    Log.d(log_tag, "Разрешения получены")
+                    if (userChoice) {
+                        startCommunication()
+                    }
+                } else {
+                    Log.d(log_tag, "Разрешения не получены")
+                }
+            }
         if (requestCode == PERMISSION_REQUEST_ACCESS_LOCATION) {
             if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
                 Toast.makeText(this, "Location permission granted", Toast.LENGTH_SHORT).show()

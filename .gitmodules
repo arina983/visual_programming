@@ -1,0 +1,3 @@
+[submodule "client-server-app"]
+	path = client-server-app
+	url = https://github.com/arina983/client-server-app.git

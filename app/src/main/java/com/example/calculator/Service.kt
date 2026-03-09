@@ -19,6 +19,7 @@ import org.zeromq.SocketType
 import org.zeromq.ZContext
 import org.zeromq.ZMQ
 import org.zeromq.ZMQException
+import java.util.Locale
 
 data class NetworkTrafficData(
     val totalRxBytes: Long,
@@ -76,7 +77,7 @@ class Service : Service() {
                         val cellInfo = getCellInfo()
                         val traffic = getNetworkTrafficInfo()
 
-                        val dataString = String.format("%.6f,%.6f,%.2f,%.2f,%d | %s | RX=%d TX=%d", location.longitude, location.latitude, location.altitude, location.accuracy, location.time, cellInfo, traffic.totalRxBytes, traffic.totalTxBytes)
+                        val dataString = String.format(Locale.US, "%.6f,%.6f,%.2f,%.2f,%d | %s | RX=%d TX=%d", location.longitude, location.latitude, location.altitude, location.accuracy, location.time, cellInfo, traffic.totalRxBytes, traffic.totalTxBytes)
 
                         socket!!.send(dataString.toByteArray(ZMQ.CHARSET), 0)
                         val reply = socket!!.recv(0)

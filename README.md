@@ -15,28 +15,28 @@
 
 *  Получение геолокации:
 
-  * Latitude
-  * Longitude
-  * Altitude
-  * Accuracy
-  * Timestamp
+   * Latitude
+   * Longitude
+   * Altitude
+   * Accuracy
+   * Timestamp
 
 *  Получение информации о сети (Telephony):
 
-  * LTE / GSM / NR (5G)
-  * CellIdentity
-  * CellSignalStrength (RSRP, RSRQ, RSSI и др.)
+   * LTE / GSM / NR (5G)
+   * CellIdentity
+   * CellSignalStrength (RSRP, RSRQ, RSSI и др.)
 
 *  Сетевой трафик:
 
-  * Общий входящий/исходящий трафик
-  * Mobile / WiFi
+   * Общий входящий/исходящий трафик
+   * Mobile / WiFi
 
 *  Работа с сокетами (ZMQ):
 
-  * Подключение к серверу
-  * Отправка данных каждые 3 секунды
-  * Получение ответа от сервера
+   * Подключение к серверу
+   * Отправка данных каждые 3 секунды
+   * Получение ответа от сервера
 
 *  Автоматическое переподключение при ошибке
 

@@ -8,38 +8,40 @@
     tools:context=".SocketsActivity">
 
     <androidx.cardview.widget.CardView
-        android:layout_width="327dp"
-        android:layout_height="86dp"
+        android:layout_width="322dp"
+        android:layout_height="107dp"
         app:cardCornerRadius="25dp"
         app:cardElevation="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.494"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.189">
+        app:layout_constraintVertical_bias="0.14">
 
         <TextView
             android:id="@+id/textView2"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_marginEnd="16dp"
             android:gravity="center"
-            android:text="Клиент"
+            android:text="Collecting CellInfo and Location data"
             android:textSize="26sp" />
     </androidx.cardview.widget.CardView>
 
     <Button
         android:id="@+id/buttonStartData"
-        android:layout_width="185dp"
-        android:layout_height="105dp"
+        android:layout_width="265dp"
+        android:layout_height="110dp"
         android:backgroundTint="#4E0119"
-        android:text="Начать передачу данных"
+        android:text="▶ Start data transfer"
+
         android:textColor="#FFC3CC"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.415" />
+        app:layout_constraintVertical_bias="0.446" />
 
     <TextView
         android:id="@+id/tvSockets"
@@ -51,20 +53,19 @@
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.583" />
+        app:layout_constraintVertical_bias="0.608" />
 
     <Button
         android:id="@+id/buttonStopData"
-        android:layout_width="185dp"
-        android:layout_height="105dp"
-        android:backgroundTint="#4E0119"
-        android:text="Закончить передачу данных"
+        android:layout_width="265dp"
+        android:layout_height="110dp"
+        android:backgroundTint="#7C7578"
+        android:text="◼ Stop data transfer"
         android:textColor="#FFC3CC"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.775" />
+        app:layout_constraintVertical_bias="0.813" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

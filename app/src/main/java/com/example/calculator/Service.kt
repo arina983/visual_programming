@@ -20,6 +20,7 @@ import org.zeromq.ZContext
 import org.zeromq.ZMQ
 import org.zeromq.ZMQException
 import java.util.Locale
+import java.io.File
 
 data class NetworkTrafficData(
     val totalRxBytes: Long,
@@ -56,9 +57,17 @@ class Service : Service() {
         }
     }
 
+    private fun saveToJson(data: String) {
+        try {
+            val file = File(filesDir, "data2.json")
+            file.appendText("{\"data\":\"$data\"}\n")
+        } catch (e: Exception) {
+            Log.e(LOG_TAG, "File write error: ${e.message}")
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(LOG_TAG, "Service started")
-
         if (!checkPermissions()) {
             Log.e(LOG_TAG, "Missing permissions")
             sendMessageToActivity("Нет разрешений")
@@ -73,31 +82,53 @@ class Service : Service() {
             while (isActive) {
                 try {
                     val location = currentLocation
-                    if (location != null && socket != null) {
+                    /*
+                    if (socket != null) {
+                        socket!!.send(dataString.toByteArray(ZMQ.CHARSET), 0)
+                    }
+                    socket = zmqContext!!.createSocket(SocketType.DEALER)
+                    if (reply != null) {
+                        Log.d(LOG_TAG, "Reply[$counter]: ${String(reply, ZMQ.CHARSET)}")
+                    } else {
+                        Log.d(LOG_TAG, "No reply")
+                    }
+                    */
+                    val dataString = if (location != null) {
                         val cellInfo = getCellInfo()
                         val traffic = getNetworkTrafficInfo()
-
-                        val dataString = String.format(Locale.US, "%.6f,%.6f,%.2f,%.2f,%d | %s | RX=%d TX=%d", location.longitude, location.latitude, location.altitude, location.accuracy, location.time, cellInfo, traffic.totalRxBytes, traffic.totalTxBytes)
-
-                        socket!!.send(dataString.toByteArray(ZMQ.CHARSET), 0)
-                        val reply = socket!!.recv(0)
-
-                        counter++
-                        Log.d(LOG_TAG, "Send[$counter]: $dataString")
-                        Log.d(LOG_TAG, "Reply[$counter]: ${String(reply, ZMQ.CHARSET)}")
-
-                        sendMessageToActivity("Отправлено: $counter")
+                        String.format(Locale.US, "%.6f,%.6f,%.2f,%.2f,%d | %s | RX=%d TX=%d", location.longitude, location.latitude, location.altitude, location.accuracy, location.time, cellInfo, traffic.totalRxBytes, traffic.totalTxBytes)
+                    } else {
+                        "NO_LOCATION ${System.currentTimeMillis()}"
                     }
-                    delay(2000)
+
+                    saveToJson(dataString)
+                    Log.d(LOG_TAG, "FILE WRITE: $dataString")
+
+                    socket?.let {
+
+                        it.send(dataString.toByteArray(ZMQ.CHARSET), 0)
+
+                        val reply = it.recv(0)
+                        if (reply != null) {
+                            Log.d(LOG_TAG, "Reply: ${String(reply, ZMQ.CHARSET)}")
+                        } else {
+                            Log.d(LOG_TAG, "No reply from server")
+                        }
+                    }
+
+                    counter++
+                    sendMessageToActivity("Отправлено: $counter")
+
+                    delay(3000)
 
                 } catch (e: ZMQException) {
                     Log.e(LOG_TAG, "ZMQ Error (${e.errorCode}): ${e.message}")
                     initZMQ()
-                    delay(1000)
+                    delay(3000)
 
                 } catch (e: Exception) {
                     Log.e(LOG_TAG, "Error: ${e.message}")
-                    delay(2000)
+                    delay(3000)
                 }
             }
         }
@@ -114,15 +145,16 @@ class Service : Service() {
 
     private fun initZMQ() {
         try {
-            try {
-                socket?.close()
-                zmqContext?.close()
-            } catch (e: Exception) {}
+            socket?.close()
+            zmqContext?.close()
 
             zmqContext = ZContext(1)
             socket = zmqContext!!.createSocket(SocketType.REQ)
-            socket!!.connect("tcp://192.168.0.103:5559")
+            socket!!.setReceiveTimeOut(3000)
+            socket!!.setSendTimeOut(3000)
+            socket!!.connect("tcp://192.168.0.103:5551")
             Log.d(LOG_TAG, "ZMQ connected")
+
         } catch (e: Exception) {
             Log.e(LOG_TAG, "ZMQ init error: ${e.message}")
             socket = null

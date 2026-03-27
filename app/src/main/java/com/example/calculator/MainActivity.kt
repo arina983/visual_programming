@@ -51,5 +51,6 @@ class MainActivity : AppCompatActivity() {
             startActivity(sockets)
         }
         setupButton(R.id.button6, Color.RED)
+        setupButton(R.id.mobileButton, Color.RED)
     }
 }

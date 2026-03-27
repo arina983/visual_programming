@@ -12,7 +12,7 @@
             android:id="@+id/textView4"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Моя геопозиция📍"
+            android:text="My geoposition📍"
             android:textSize="20sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -22,10 +22,10 @@
 
         <Button
             android:id="@+id/currentPositionButton"
-            android:layout_width="wrap_content"
+            android:layout_width="280dp"
             android:layout_height="wrap_content"
             android:backgroundTint="#B2DFDB"
-            android:text="Получить последнюю геопозицию"
+            android:text="Get the latest location"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.122"

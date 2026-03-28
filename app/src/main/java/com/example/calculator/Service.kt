@@ -59,13 +59,34 @@ class Service : Service() {
 
     private fun saveToJson(data: String) {
         try {
-            val file = File(filesDir, "data2.json")
-            file.appendText("{\"data\":\"$data\"}\n")
+            val file = File(filesDir, "data3.json")
+            file.appendText(data + "\n")
+            Log.d(LOG_TAG, "Saved to file: ${file.absolutePath} (${file.length()} bytes)")
         } catch (e: Exception) {
             Log.e(LOG_TAG, "File write error: ${e.message}")
         }
     }
+    private fun buildJson(location: Location?): String {
+        return if (location != null) {
+            val cellInfo = getCellInfo()
+            val traffic = getNetworkTrafficInfo()
 
+            """
+        {
+            "longitude": ${location.longitude},
+            "latitude": ${location.latitude},
+            "altitude": ${location.altitude},
+            "accuracy": ${location.accuracy},
+            "time": ${location.time},
+            "cell": "${cellInfo.replace("\"", "'")}",
+            "rx": ${traffic.totalRxBytes},
+            "tx": ${traffic.totalTxBytes}
+        }
+        """.trimIndent()
+        } else {
+            """{ "error": "NO_LOCATION", "time": ${System.currentTimeMillis()} }"""
+        }
+    }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(LOG_TAG, "Service started")
         if (!checkPermissions()) {
@@ -81,7 +102,7 @@ class Service : Service() {
 
             while (isActive) {
                 try {
-                    val location = currentLocation
+                    //val location = currentLocation
                     /*
                     if (socket != null) {
                         socket!!.send(dataString.toByteArray(ZMQ.CHARSET), 0)
@@ -93,29 +114,18 @@ class Service : Service() {
                         Log.d(LOG_TAG, "No reply")
                     }
                     */
-                    val dataString = if (location != null) {
-                        val cellInfo = getCellInfo()
-                        val traffic = getNetworkTrafficInfo()
-                        String.format(Locale.US, "%.6f,%.6f,%.2f,%.2f,%d | %s | RX=%d TX=%d", location.longitude, location.latitude, location.altitude, location.accuracy, location.time, cellInfo, traffic.totalRxBytes, traffic.totalTxBytes)
-                    } else {
-                        "NO_LOCATION ${System.currentTimeMillis()}"
-                    }
-
+                    val dataString = buildJson((currentLocation))
                     saveToJson(dataString)
+
                     Log.d(LOG_TAG, "FILE WRITE: $dataString")
 
-                    socket?.let {
-
-                        it.send(dataString.toByteArray(ZMQ.CHARSET), 0)
-
-                        val reply = it.recv(0)
-                        if (reply != null) {
-                            Log.d(LOG_TAG, "Reply: ${String(reply, ZMQ.CHARSET)}")
-                        } else {
-                            Log.d(LOG_TAG, "No reply from server")
-                        }
+                    socket?.send(dataString.toByteArray(ZMQ.CHARSET), 0)
+                    val reply = socket?.recv(0)
+                    if (reply !=null) {
+                        Log.d(LOG_TAG, "REPLY: ${String(reply)}")
+                    } else {
+                        Log.d(LOG_TAG, "NO REPLY")
                     }
-
                     counter++
                     sendMessageToActivity("Отправлено: $counter")
 

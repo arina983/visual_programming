@@ -118,7 +118,6 @@ socket.connect("tcp://<IP>:5555")
 ##  Технологии
 
 * Kotlin
-* Android SDK
 * ZeroMQ 
 * Coroutines
 
@@ -127,11 +126,10 @@ socket.connect("tcp://<IP>:5555")
 ##  Связанный проект
 
 Backend-сервер (C++ + ZMQ + ImGui) находится в отдельном репозитории.
-
+https://github.com/arina983/client-server-app
 ---
 
-## В \app\src\main\java\com\example\calculator\Movable находится
-### Симуляция движения объектов
+### \app\src\main\java\com\example\calculator\Movable Симуляция движения объектов
 
 Проект реализует систему моделирования движения различных объектов с использованием интерфейсов и наследования в Kotlin.
 

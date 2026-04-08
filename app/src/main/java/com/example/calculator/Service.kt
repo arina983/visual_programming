@@ -59,7 +59,7 @@ class Service : Service() {
 
     private fun saveToJson(data: String) {
         try {
-            val file = File(filesDir, "data3.json")
+            val file = File(filesDir, "data4.json")
             file.appendText(data + "\n")
             Log.d(LOG_TAG, "Saved to file: ${file.absolutePath} (${file.length()} bytes)")
         } catch (e: Exception) {
@@ -78,7 +78,7 @@ class Service : Service() {
             "altitude": ${location.altitude},
             "accuracy": ${location.accuracy},
             "time": ${location.time},
-            "cell": "${cellInfo.replace("\"", "'")}",
+            "cell": $cellInfo,
             "rx": ${traffic.totalRxBytes},
             "tx": ${traffic.totalTxBytes}
         }
@@ -149,7 +149,6 @@ class Service : Service() {
         val fineLocation = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         val coarseLocation = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         val phoneState = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
-
         return (fineLocation || coarseLocation) && phoneState
     }
 
@@ -157,12 +156,11 @@ class Service : Service() {
         try {
             socket?.close()
             zmqContext?.close()
-
             zmqContext = ZContext(1)
             socket = zmqContext!!.createSocket(SocketType.REQ)
             socket!!.setReceiveTimeOut(3000)
             socket!!.setSendTimeOut(3000)
-            socket!!.connect("tcp://192.168.0.103:5551")
+            socket!!.connect("tcp://192.168.71.126:5551")
             Log.d(LOG_TAG, "ZMQ connected")
 
         } catch (e: Exception) {
@@ -186,17 +184,63 @@ class Service : Service() {
 
     private fun getCellInfo(): String {
         return try {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-                val cellInfoList = telephonyManager.allCellInfo
-                if (!cellInfoList.isNullOrEmpty()) {
-                    val activeCell = cellInfoList.find { it.isRegistered }
-                    activeCell?.toString() ?: cellInfoList[0].toString()
-                } else "No cell info"
-            } else {
-                "No permission for cell info"
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+                Log.w(LOG_TAG, "READ_PHONE_STATE permission denied")
+                return "[]"
             }
+
+            val cellInfoList = telephonyManager.allCellInfo
+
+            Log.d(LOG_TAG, "allCellInfo returned ${cellInfoList?.size ?: 0} cells")
+
+            if (cellInfoList.isNullOrEmpty()) {
+                Log.w(LOG_TAG, "No cell info available")
+                return "[]"
+            }
+
+            val cells = mutableListOf<String>()
+            var registeredCount = 0
+            var neighborCount = 0
+
+            for (info in cellInfoList) {
+                if (info is android.telephony.CellInfoLte) {
+                    val identity = info.cellIdentity as android.telephony.CellIdentityLte
+                    val signal = info.cellSignalStrength as android.telephony.CellSignalStrengthLte
+
+                    val isRegistered = info.isRegistered
+                    if (isRegistered) registeredCount++ else neighborCount++
+
+                    Log.d(LOG_TAG, "LTE Cell -> PCI=${identity.pci}, RSRP=${signal.rsrp}, RSRQ=${signal.rsrq}, " +
+                            "isRegistered=$isRegistered")
+
+                    val cellJson = """
+                {
+                    "type":"LTE",
+                    "pci":${identity.pci},
+                    "rsrp":${signal.rsrp},
+                    "rsrq":${signal.rsrq},
+                    "rssi":${signal.rssi},
+                    "sinr":${signal.rssnr},
+                    "earfcn":${identity.earfcn},
+                    "tac":${identity.tac},
+                    "ci":${identity.ci},
+                    "isRegistered":$isRegistered
+                }
+                """.trimIndent().replace(Regex("\\s+"), "")
+
+                    cells.add(cellJson)
+                }
+            }
+
+            val result = "[${cells.joinToString(",")}]"
+            Log.d(LOG_TAG, "Sending ${cells.size} cells (registered: $registeredCount, neighbors: $neighborCount)")
+
+            result
+
         } catch (e: Exception) {
-            "CellInfo error: ${e.message}"
+            Log.e(LOG_TAG, "CellInfo error", e)
+            "[]"
         }
     }
 
@@ -223,7 +267,6 @@ class Service : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceJob.cancel()
-
         try {
             locationManager.removeUpdates(locationListener)
             socket?.close()
